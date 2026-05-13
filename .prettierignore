@@ -1,0 +1,11 @@
+node_modules
+dist
+build
+coverage
+.next
+pnpm-lock.yaml
+*.min.js
+*.min.css
+artifacts/**/dist
+lib/db/dist
+artifacts/traffic-forge/src/shared/components/ui

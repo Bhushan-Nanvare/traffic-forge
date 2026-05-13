@@ -1,0 +1,75 @@
+# Local dev stack: postgres + api-server + frontend + demo-app target.
+# One command — `docker compose up` — boots everything wired together.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: trafficforge-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: trafficforge
+      POSTGRES_PASSWORD: trafficforge
+      POSTGRES_DB: trafficforge
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./lib/db/drizzle:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U trafficforge -d trafficforge']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api-server:
+    build:
+      context: .
+      dockerfile: artifacts/api-server/Dockerfile
+    container_name: trafficforge-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 8080
+      DATABASE_URL: postgres://trafficforge:trafficforge@postgres:5432/trafficforge
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    ports:
+      - '8080:8080'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: artifacts/traffic-forge/Dockerfile
+    container_name: trafficforge-web
+    restart: unless-stopped
+    ports:
+      - '3000:80'
+    depends_on:
+      - api-server
+
+  # Optional target for TrafficForge to test against. Run with:
+  #   docker compose --profile demo up
+  demo-app:
+    profiles: ['demo']
+    image: node:20-bookworm-slim
+    container_name: trafficforge-demo
+    working_dir: /app
+    command: sh -c "corepack enable && corepack prepare pnpm@10 --activate && pnpm install --frozen-lockfile && pnpm --filter demo-app run server"
+    environment:
+      PORT: 4000
+      ENABLE_BUG_ORDER_VIOLATION: 'true'
+      ENABLE_BUG_PERSISTENCE_FAILURE: 'true'
+      ENABLE_BUG_REALTIME_DELAY: 'true'
+      ENABLE_BUG_REACTION_RACE: 'true'
+      ENABLE_BUG_BROADCAST_DROP: 'true'
+    ports:
+      - '4000:4000'
+    volumes:
+      - .:/app
+      - /app/node_modules
+
+volumes:
+  postgres-data:

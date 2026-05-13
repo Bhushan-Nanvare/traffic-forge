@@ -7,6 +7,10 @@ import AgentMonitor from './features/agent-monitor/AgentMonitor';
 import AgentActivityViewer from './features/agent-monitor/AgentActivityViewer';
 import Analytics from './features/analytics/Analytics';
 import Reports from './features/reports/Reports';
+import TestResults from './features/test-results/TestResults';
+import RCAReport from './features/rca/RCAReport';
+import BottleneckAnalysis from './features/bottleneck/BottleneckAnalysis';
+import PredictionDashboard from './features/prediction/PredictionDashboard';
 import NotFound from './pages/NotFound';
 
 function App() {
@@ -20,6 +24,10 @@ function App() {
         <Route path="/agent-activity" element={<AgentActivityViewer />} />
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/reports" element={<Reports />} />
+        <Route path="/results" element={<TestResults />} />
+        <Route path="/rca" element={<RCAReport />} />
+        <Route path="/bottleneck" element={<BottleneckAnalysis />} />
+        <Route path="/prediction" element={<PredictionDashboard />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

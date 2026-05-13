@@ -1,0 +1,11 @@
+node_modules
+.git
+dist
+artifacts/traffic-forge/dist
+artifacts/demo-app/node_modules
+test-website
+.pnpm-store
+*.log
+.env.local
+.storage-state
+docs

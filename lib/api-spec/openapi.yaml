@@ -18,12 +18,12 @@ paths:
       summary: Health check
       description: Returns server health status
       responses:
-        "200":
+        '200':
           description: Healthy
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/HealthStatus"
+                $ref: '#/components/schemas/HealthStatus'
 components:
   schemas:
     HealthStatus:
@@ -33,4 +33,3 @@ components:
           type: string
       required:
         - status
-

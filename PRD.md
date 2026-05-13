@@ -1,4 +1,5 @@
 # Product Requirements Document (PRD)
+
 # TrafficForge AI — Load Testing & Traffic Simulation Platform
 
 **Version:** 1.0  
@@ -12,6 +13,7 @@
 TrafficForge AI is an AI-powered load testing and traffic simulation platform. It allows developers, QA engineers, and DevOps teams to simulate real human behavior on any website by deploying up to 1,000 virtual agents simultaneously. Unlike traditional load testing tools that fire raw HTTP requests with no intelligence, TrafficForge scans the target website first, understands its structure, and then simulates realistic user journeys across discovered pages.
 
 The platform operates in two modes:
+
 - **HTTP Mode** — fires real HTTP requests from virtual user agents concurrently
 - **Browser Mode** — launches headless Playwright browsers that simulate actual user interactions (clicks, form fills, navigation)
 - **Both Mode** — runs both engines simultaneously for maximum coverage
@@ -33,18 +35,19 @@ Existing load testing tools (JMeter, k6, Locust) require manual scripting, techn
 
 ## 3. Target Users
 
-| User Type | Pain Point Solved |
-|---|---|
-| Frontend/Backend Developers | Quickly stress-test a feature before deploy |
-| QA Engineers | Automate load test scenarios without scripting |
-| DevOps/SRE Teams | Baseline performance metrics for SLOs |
-| Startup CTOs | Confirm infrastructure can handle launch traffic |
+| User Type                   | Pain Point Solved                                |
+| --------------------------- | ------------------------------------------------ |
+| Frontend/Backend Developers | Quickly stress-test a feature before deploy      |
+| QA Engineers                | Automate load test scenarios without scripting   |
+| DevOps/SRE Teams            | Baseline performance metrics for SLOs            |
+| Startup CTOs                | Confirm infrastructure can handle launch traffic |
 
 ---
 
 ## 4. Core Features
 
 ### 4.1 Site Scanner
+
 - Automatically crawls the target URL up to a configurable page limit (max 30)
 - Discovers all internal links and page paths
 - Detects forms, clickable elements, buttons
@@ -54,6 +57,7 @@ Existing load testing tools (JMeter, k6, Locust) require manual scripting, techn
 - Returns a clear error if the target site is unreachable
 
 ### 4.2 Test Configuration
+
 - Target URL input
 - Virtual user count (HTTP agents: 1–1000, Browser agents: 1–50)
 - Test duration in seconds
@@ -66,6 +70,7 @@ Existing load testing tools (JMeter, k6, Locust) require manual scripting, techn
 - Optional login credentials for authenticated testing
 
 ### 4.3 Live Dashboard (Mission Control)
+
 - Real-time display of active virtual agents
 - Live requests/second counter
 - Live error rate percentage
@@ -77,10 +82,12 @@ Existing load testing tools (JMeter, k6, Locust) require manual scripting, techn
 - Emergency stop button
 
 ### 4.4 Agent Monitor
+
 - Per-agent view of what each virtual user is doing
 - Real-time action log per agent
 
 ### 4.5 Analytics (Post-Run)
+
 - Page traffic heatmap showing which pages received the most hits
 - Response time chart (historical)
 - Latency percentiles: P50, P95, P99
@@ -88,6 +95,7 @@ Existing load testing tools (JMeter, k6, Locust) require manual scripting, techn
 - Summary stats: total completed requests, total failed, error rate, test duration
 
 ### 4.6 Reports (History)
+
 - Table of all past test runs
 - Per-run: date, duration, user count, error rate, pass/fail status
 - Only completed runs are shown (no orphan/pending entries)
@@ -98,21 +106,22 @@ Existing load testing tools (JMeter, k6, Locust) require manual scripting, techn
 
 ## 5. Non-Functional Requirements
 
-| Category | Requirement |
-|---|---|
-| Performance | Support up to 1,000 concurrent virtual HTTP agents |
-| Realtime | WebSocket metrics updates every 500ms during a live test |
-| Persistence | All test configs and results persisted to PostgreSQL |
-| Reliability | Stale "running" runs auto-recovered to "interrupted" on server restart |
-| Accuracy | All metrics (response times, error rates, percentiles) calculated from real HTTP responses |
-| Scalability | Monorepo structure supports independent scaling of frontend and backend |
-| Resilience | WebSocket client reconnects with exponential backoff (max 5 attempts) |
+| Category    | Requirement                                                                                |
+| ----------- | ------------------------------------------------------------------------------------------ |
+| Performance | Support up to 1,000 concurrent virtual HTTP agents                                         |
+| Realtime    | WebSocket metrics updates every 500ms during a live test                                   |
+| Persistence | All test configs and results persisted to PostgreSQL                                       |
+| Reliability | Stale "running" runs auto-recovered to "interrupted" on server restart                     |
+| Accuracy    | All metrics (response times, error rates, percentiles) calculated from real HTTP responses |
+| Scalability | Monorepo structure supports independent scaling of frontend and backend                    |
+| Resilience  | WebSocket client reconnects with exponential backoff (max 5 attempts)                      |
 
 ---
 
 ## 6. User Flows
 
 ### Primary Flow — Run a Load Test
+
 1. User visits Overview page → clicks "Start Testing"
 2. User goes to Test Config → enters target URL
 3. User clicks "Scan Site" → scanner crawls the site and auto-fills discovered paths
@@ -125,6 +134,7 @@ Existing load testing tools (JMeter, k6, Locust) require manual scripting, techn
 10. User navigates to Reports to see historical run history
 
 ### Secondary Flow — View History
+
 1. User goes to Reports
 2. Sees table of all completed/cancelled/interrupted test runs
 3. Clicks on a run to see details
@@ -134,95 +144,97 @@ Existing load testing tools (JMeter, k6, Locust) require manual scripting, techn
 
 ## 7. Pages & Navigation
 
-| Route | Page | Purpose |
-|---|---|---|
-| `/` | Overview | Landing page, platform intro, quick start |
-| `/dashboard` | Mission Control | Live metrics during an active test |
-| `/test-config` | Test Config | Configure and launch a test |
-| `/agents` | Agent Monitor | Per-agent activity viewer |
-| `/analytics` | Analytics | Post-run performance breakdown |
-| `/reports` | Reports | Historical test run table |
+| Route          | Page            | Purpose                                   |
+| -------------- | --------------- | ----------------------------------------- |
+| `/`            | Overview        | Landing page, platform intro, quick start |
+| `/dashboard`   | Mission Control | Live metrics during an active test        |
+| `/test-config` | Test Config     | Configure and launch a test               |
+| `/agents`      | Agent Monitor   | Per-agent activity viewer                 |
+| `/analytics`   | Analytics       | Post-run performance breakdown            |
+| `/reports`     | Reports         | Historical test run table                 |
 
 ---
 
 ## 8. API Endpoints
 
-| Method | Endpoint | Purpose |
-|---|---|---|
-| GET | `/api/health` | Server health check |
-| GET | `/api/active-runs` | List currently running tests |
-| POST | `/api/scan` | Scan a target URL |
-| POST | `/api/test-configs` | Create a test configuration |
-| POST | `/api/test-runs` | Create a test run record |
-| GET | `/api/test-runs` | List all test runs (last 50) |
-| GET | `/api/test-runs/:id` | Get a specific test run |
-| POST | `/api/test-runs/:id/start` | Start a test run |
-| POST | `/api/test-runs/:id/stop` | Emergency stop a test run |
-| POST | `/api/test-runs/:id/cleanup` | Delete run + config from DB |
-| WS | `/ws/live-metrics?runId=<id>` | WebSocket stream for live metrics |
+| Method | Endpoint                      | Purpose                           |
+| ------ | ----------------------------- | --------------------------------- |
+| GET    | `/api/health`                 | Server health check               |
+| GET    | `/api/active-runs`            | List currently running tests      |
+| POST   | `/api/scan`                   | Scan a target URL                 |
+| POST   | `/api/test-configs`           | Create a test configuration       |
+| POST   | `/api/test-runs`              | Create a test run record          |
+| GET    | `/api/test-runs`              | List all test runs (last 50)      |
+| GET    | `/api/test-runs/:id`          | Get a specific test run           |
+| POST   | `/api/test-runs/:id/start`    | Start a test run                  |
+| POST   | `/api/test-runs/:id/stop`     | Emergency stop a test run         |
+| POST   | `/api/test-runs/:id/cleanup`  | Delete run + config from DB       |
+| WS     | `/ws/live-metrics?runId=<id>` | WebSocket stream for live metrics |
 
 ---
 
 ## 9. Data Model
 
 ### test_configs
+
 Stores the configuration for a test before and after it runs.
 
-| Column | Type | Description |
-|---|---|---|
-| id | serial (PK) | Auto-incrementing integer |
-| url | text | Target URL |
-| user_count | integer | Number of HTTP virtual users |
-| duration_sec | integer | Test duration in seconds |
-| ramp_up_sec | integer | Ramp-up period in seconds |
-| app_type | text | Detected app type |
-| persona | text | User behavior persona |
-| shadow_mode | boolean | Whether to suppress analytics impact |
-| respect_rate_limits | boolean | Polite vs aggressive mode |
-| auto_stop_error_threshold | integer | % error rate to trigger auto-stop |
-| discovered_paths | jsonb | Array of paths found by scanner |
-| test_mode | text | "http", "browser", or "both" |
-| browser_user_count | integer | Number of browser (Playwright) agents |
-| browser_duration_sec | integer | Browser test duration |
-| browser_ramp_up_sec | integer | Browser ramp-up period |
-| login_username | text | Optional login credential |
-| login_password | text | Optional login credential |
-| created_at | timestamp | Creation time |
+| Column                    | Type        | Description                           |
+| ------------------------- | ----------- | ------------------------------------- |
+| id                        | serial (PK) | Auto-incrementing integer             |
+| url                       | text        | Target URL                            |
+| user_count                | integer     | Number of HTTP virtual users          |
+| duration_sec              | integer     | Test duration in seconds              |
+| ramp_up_sec               | integer     | Ramp-up period in seconds             |
+| app_type                  | text        | Detected app type                     |
+| persona                   | text        | User behavior persona                 |
+| shadow_mode               | boolean     | Whether to suppress analytics impact  |
+| respect_rate_limits       | boolean     | Polite vs aggressive mode             |
+| auto_stop_error_threshold | integer     | % error rate to trigger auto-stop     |
+| discovered_paths          | jsonb       | Array of paths found by scanner       |
+| test_mode                 | text        | "http", "browser", or "both"          |
+| browser_user_count        | integer     | Number of browser (Playwright) agents |
+| browser_duration_sec      | integer     | Browser test duration                 |
+| browser_ramp_up_sec       | integer     | Browser ramp-up period                |
+| login_username            | text        | Optional login credential             |
+| login_password            | text        | Optional login credential             |
+| created_at                | timestamp   | Creation time                         |
 
 ### test_runs
+
 Stores the result of each test execution.
 
-| Column | Type | Description |
-|---|---|---|
-| id | text (PK) | UUID generated at creation |
-| config_id | integer (FK) | References test_configs.id |
-| status | text | pending / running / completed / cancelled / interrupted |
-| total_requests | integer | Total HTTP requests fired |
-| error_rate | real | Overall error percentage |
-| avg_response_ms | real | Average response time in ms |
-| p50_ms | integer | 50th percentile response time |
-| p95_ms | integer | 95th percentile response time |
-| p99_ms | integer | 99th percentile response time |
-| passed | boolean (nullable) | null=never ran, true=pass, false=fail |
-| user_count | integer | Actual number of users used |
-| started_at | timestamp | When the test began |
-| ended_at | timestamp | When the test finished |
-| created_at | timestamp | When the record was created |
-| page_metrics | jsonb | Per-page { count, avgMs, errors } |
-| error_breakdown | jsonb | Error counts by type |
+| Column          | Type               | Description                                             |
+| --------------- | ------------------ | ------------------------------------------------------- |
+| id              | text (PK)          | UUID generated at creation                              |
+| config_id       | integer (FK)       | References test_configs.id                              |
+| status          | text               | pending / running / completed / cancelled / interrupted |
+| total_requests  | integer            | Total HTTP requests fired                               |
+| error_rate      | real               | Overall error percentage                                |
+| avg_response_ms | real               | Average response time in ms                             |
+| p50_ms          | integer            | 50th percentile response time                           |
+| p95_ms          | integer            | 95th percentile response time                           |
+| p99_ms          | integer            | 99th percentile response time                           |
+| passed          | boolean (nullable) | null=never ran, true=pass, false=fail                   |
+| user_count      | integer            | Actual number of users used                             |
+| started_at      | timestamp          | When the test began                                     |
+| ended_at        | timestamp          | When the test finished                                  |
+| created_at      | timestamp          | When the record was created                             |
+| page_metrics    | jsonb              | Per-page { count, avgMs, errors }                       |
+| error_breakdown | jsonb              | Error counts by type                                    |
 
 ---
 
 ## 10. Metrics Definitions
 
-| Metric | Definition |
-|---|---|
-| P50 (Median) | 50% of requests completed faster than this value |
-| P95 | 95% of requests completed faster than this value — represents the "slow users" |
-| P99 | 99% of requests completed faster than this value — represents the worst case |
-| Error Rate | (failed requests / total requests) × 100 |
-| Requests/sec | Total requests fired / elapsed seconds |
-| Ramp-up | Staggered start where each new user begins after an equal interval |
+| Metric       | Definition                                                                     |
+| ------------ | ------------------------------------------------------------------------------ |
+| P50 (Median) | 50% of requests completed faster than this value                               |
+| P95          | 95% of requests completed faster than this value — represents the "slow users" |
+| P99          | 99% of requests completed faster than this value — represents the worst case   |
+| Error Rate   | (failed requests / total requests) × 100                                       |
+| Requests/sec | Total requests fired / elapsed seconds                                         |
+| Ramp-up      | Staggered start where each new user begins after an equal interval             |
 
 ---
 

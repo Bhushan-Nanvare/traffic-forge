@@ -3,10 +3,26 @@ import { Activity, Zap, Shield, BarChart3 } from 'lucide-react';
 
 export default function Overview() {
   const features = [
-    { icon: Zap, title: 'Lightning Fast', desc: 'Concurrent HTTP load testing with thousands of virtual users' },
-    { icon: Shield, title: 'Smart Detection', desc: 'Site scanner discovers pages, forms, and app patterns automatically' },
-    { icon: Activity, title: 'Live Monitoring', desc: 'Real-time WebSocket metrics streamed every 500ms' },
-    { icon: BarChart3, title: 'Deep Analytics', desc: 'P50/P95/P99 percentiles, error breakdown, and page-level metrics' },
+    {
+      icon: Zap,
+      title: 'Lightning Fast',
+      desc: 'Concurrent HTTP load testing with thousands of virtual users',
+    },
+    {
+      icon: Shield,
+      title: 'Smart Detection',
+      desc: 'Site scanner discovers pages, forms, and app patterns automatically',
+    },
+    {
+      icon: Activity,
+      title: 'Live Monitoring',
+      desc: 'Real-time WebSocket metrics streamed every 500ms',
+    },
+    {
+      icon: BarChart3,
+      title: 'Deep Analytics',
+      desc: 'P50/P95/P99 percentiles, error breakdown, and page-level metrics',
+    },
   ];
 
   return (
@@ -15,8 +31,8 @@ export default function Overview() {
         <h1 className="text-5xl font-bold mb-4">TrafficForge</h1>
         <p className="text-xl text-muted-foreground">Intelligent Load Testing Platform</p>
         <p className="mt-4 text-muted-foreground max-w-2xl">
-          Test your web applications with smart agents that understand what your app does.
-          Find bugs, bottlenecks, and performance issues before your users do.
+          Test your web applications with smart agents that understand what your app does. Find
+          bugs, bottlenecks, and performance issues before your users do.
         </p>
       </div>
 
@@ -37,10 +53,7 @@ export default function Overview() {
         >
           Start Testing
         </Link>
-        <Link
-          to="/reports"
-          className="px-6 py-3 border rounded-lg font-medium hover:bg-accent"
-        >
+        <Link to="/reports" className="px-6 py-3 border rounded-lg font-medium hover:bg-accent">
           View Reports
         </Link>
       </div>

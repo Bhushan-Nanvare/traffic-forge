@@ -7,7 +7,9 @@ export function Logo() {
         <Zap className="w-5 h-5 text-primary" fill="currentColor" />
       </div>
       <div className="flex flex-col">
-        <span className="text-sm font-bold text-foreground tracking-tight leading-none">TrafficForge</span>
+        <span className="text-sm font-bold text-foreground tracking-tight leading-none">
+          TrafficForge
+        </span>
         <span className="text-[10px] font-mono text-primary tracking-widest">AI</span>
       </div>
     </div>

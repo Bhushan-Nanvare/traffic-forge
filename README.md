@@ -74,33 +74,34 @@ In production, the Express server serves the compiled React frontend as static f
 
 ## Environment Variables
 
-| Variable | Required | Description |
-|---|---|---|
-| `DATABASE_URL` | Yes | PostgreSQL connection string (e.g. `postgresql://user:pass@host:5432/dbname`) |
-| `PORT` | Yes | Port for the backend server |
-| `NODE_ENV` | No | Set to `production` to enable static frontend serving |
-| `BASE_PATH` | Dev only | Base path for the Vite dev server (use `/`) |
+| Variable       | Required | Description                                                                   |
+| -------------- | -------- | ----------------------------------------------------------------------------- |
+| `DATABASE_URL` | Yes      | PostgreSQL connection string (e.g. `postgresql://user:pass@host:5432/dbname`) |
+| `PORT`         | Yes      | Port for the backend server                                                   |
+| `NODE_ENV`     | No       | Set to `production` to enable static frontend serving                         |
+| `BASE_PATH`    | Dev only | Base path for the Vite dev server (use `/`)                                   |
 
 ## API Endpoints
 
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/health` | Health check |
-| GET | `/api/active-runs` | List running tests |
-| POST | `/api/scan` | Scan a target URL |
-| POST | `/api/test-configs` | Create a test configuration |
-| POST | `/api/test-runs` | Create a test run |
-| GET | `/api/test-runs` | List all test runs |
-| POST | `/api/test-runs/:id/start` | Start a test run |
-| POST | `/api/test-runs/:id/stop` | Stop a running test |
-| POST | `/api/test-runs/:id/cleanup` | Delete run and config |
-| WS | `/ws/live-metrics?runId=` | Live metrics WebSocket stream |
+| Method | Endpoint                     | Description                   |
+| ------ | ---------------------------- | ----------------------------- |
+| GET    | `/api/health`                | Health check                  |
+| GET    | `/api/active-runs`           | List running tests            |
+| POST   | `/api/scan`                  | Scan a target URL             |
+| POST   | `/api/test-configs`          | Create a test configuration   |
+| POST   | `/api/test-runs`             | Create a test run             |
+| GET    | `/api/test-runs`             | List all test runs            |
+| POST   | `/api/test-runs/:id/start`   | Start a test run              |
+| POST   | `/api/test-runs/:id/stop`    | Stop a running test           |
+| POST   | `/api/test-runs/:id/cleanup` | Delete run and config         |
+| WS     | `/ws/live-metrics?runId=`    | Live metrics WebSocket stream |
 
 ## Database Schema
 
 Two tables: `test_configs` (stores test settings) and `test_runs` (stores test results).
 
 Run migrations with:
+
 ```bash
 pnpm --filter @workspace/db run db:push
 ```

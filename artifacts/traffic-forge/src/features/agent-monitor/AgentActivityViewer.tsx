@@ -11,7 +11,11 @@ export default function AgentActivityViewer() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Agent Activity Stream</h1>
         <span className="text-sm">
-          {isLive ? <span className="text-success">● Live ({activities.length} events)</span> : <span className="text-muted-foreground">● Offline</span>}
+          {isLive ? (
+            <span className="text-success">● Live ({activities.length} events)</span>
+          ) : (
+            <span className="text-muted-foreground">● Offline</span>
+          )}
         </span>
       </div>
 
@@ -28,7 +32,9 @@ export default function AgentActivityViewer() {
                 <span className="font-mono text-sm font-semibold">{activity.name}</span>
                 <span className="text-xs text-muted-foreground">{activity.time}</span>
               </div>
-              <p className={`text-sm ${activity.type === 'error' ? 'text-destructive' : 'text-muted-foreground'}`}>
+              <p
+                className={`text-sm ${activity.type === 'error' ? 'text-destructive' : 'text-muted-foreground'}`}
+              >
                 {activity.action}
               </p>
             </div>

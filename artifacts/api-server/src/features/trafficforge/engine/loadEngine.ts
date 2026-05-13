@@ -2,7 +2,7 @@
  * Real Load Testing Engine — fires actual HTTP requests to the target URL.
  * Measures real response times, status codes, and errors. No simulation.
  */
-import os from "os";
+import os from 'os';
 
 export interface LoadConfig {
   url: string;
@@ -20,7 +20,7 @@ export interface RequestResult {
   statusCode: number;
   responseMs: number;
   success: boolean;
-  errorType?: "timeout" | "network" | "http_4xx" | "http_5xx";
+  errorType?: 'timeout' | 'network' | 'http_4xx' | 'http_5xx';
   timestamp: number;
   userId: number;
 }
@@ -48,12 +48,12 @@ export interface LiveMetrics {
     id: number;
     name: string;
     action: string;
-    type: "info" | "success" | "error";
+    type: 'info' | 'success' | 'error';
     time: string;
   }>;
 }
 
-const USER_AGENT = "TrafficForge-LoadTest/1.0 (Real HTTP Load Tester)";
+const USER_AGENT = 'TrafficForge-LoadTest/1.0 (Real HTTP Load Tester)';
 let globalActivityId = 0;
 
 function percentile(sorted: number[], p: number): number {
@@ -78,47 +78,63 @@ async function makeRequest(
   baseUrl: string,
   path: string,
   timeoutMs: number,
-  userId: number
+  userId: number,
 ): Promise<RequestResult> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   const t0 = performance.now();
   const timestamp = Date.now();
 
-  const fullUrl = `${baseUrl.replace(/\/$/, "")}${path}`;
+  const fullUrl = `${baseUrl.replace(/\/$/, '')}${path}`;
 
   try {
     const res = await fetch(fullUrl, {
       signal: controller.signal,
       headers: {
-        "User-Agent": USER_AGENT,
-        Accept: "text/html,application/json,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Cache-Control": "no-cache",
-        "X-Load-Test": "TrafficForge",
+        'User-Agent': USER_AGENT,
+        Accept: 'text/html,application/json,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Cache-Control': 'no-cache',
+        'X-Load-Test': 'TrafficForge',
       },
-      redirect: "follow",
+      redirect: 'follow',
     });
     // Drain the body to get accurate time-to-complete (not just TTFB)
     await res.text().catch(() => {});
     const responseMs = Math.round(performance.now() - t0);
 
     if (res.status >= 500) {
-      return { path, statusCode: res.status, responseMs, success: false, errorType: "http_5xx", timestamp, userId };
+      return {
+        path,
+        statusCode: res.status,
+        responseMs,
+        success: false,
+        errorType: 'http_5xx',
+        timestamp,
+        userId,
+      };
     }
     if (res.status >= 400) {
-      return { path, statusCode: res.status, responseMs, success: false, errorType: "http_4xx", timestamp, userId };
+      return {
+        path,
+        statusCode: res.status,
+        responseMs,
+        success: false,
+        errorType: 'http_4xx',
+        timestamp,
+        userId,
+      };
     }
     return { path, statusCode: res.status, responseMs, success: true, timestamp, userId };
   } catch (err: unknown) {
     const responseMs = Math.round(performance.now() - t0);
-    const isAborted = err instanceof Error && err.name === "AbortError";
+    const isAborted = err instanceof Error && err.name === 'AbortError';
     return {
       path,
       statusCode: 0,
       responseMs,
       success: false,
-      errorType: isAborted ? "timeout" : "network",
+      errorType: isAborted ? 'timeout' : 'network',
       timestamp,
       userId,
     };
@@ -132,18 +148,24 @@ function buildMetrics(
   activeUsers: number,
   startTime: number,
   recentBatch: RequestResult[],
-  inFlightCount: number
+  inFlightCount: number,
 ): LiveMetrics {
   const elapsedMs = Date.now() - startTime;
   const elapsedSec = elapsedMs / 1000;
 
-  const completed = results.filter(r => r.success).length;
-  const failed = results.filter(r => !r.success).length;
+  const completed = results.filter((r) => r.success).length;
+  const failed = results.filter((r) => !r.success).length;
   const total = results.length;
   const errorRate = total === 0 ? 0 : +((failed / total) * 100).toFixed(2);
 
-  const successTimes = results.filter(r => r.success).map(r => r.responseMs).sort((a, b) => a - b);
-  const avgResponseMs = successTimes.length === 0 ? 0 : Math.round(successTimes.reduce((s, v) => s + v, 0) / successTimes.length);
+  const successTimes = results
+    .filter((r) => r.success)
+    .map((r) => r.responseMs)
+    .sort((a, b) => a - b);
+  const avgResponseMs =
+    successTimes.length === 0
+      ? 0
+      : Math.round(successTimes.reduce((s, v) => s + v, 0) / successTimes.length);
 
   // Per-path metrics
   const pageMetrics: Record<string, { count: number; avgMs: number; errors: number }> = {};
@@ -161,8 +183,8 @@ function buildMetrics(
 
   // Error breakdown
   const errorBreakdown: Record<string, number> = {};
-  for (const r of results.filter(r => !r.success)) {
-    const key = r.errorType ?? "unknown";
+  for (const r of results.filter((r) => !r.success)) {
+    const key = r.errorType ?? 'unknown';
     errorBreakdown[key] = (errorBreakdown[key] ?? 0) + 1;
   }
 
@@ -174,16 +196,20 @@ function buildMetrics(
 
   const now = new Date();
   const chartPoint = {
-    time: `${now.getMinutes()}:${String(now.getSeconds()).padStart(2, "0")}`,
+    time: `${now.getMinutes()}:${String(now.getSeconds()).padStart(2, '0')}`,
     value: avgResponseMs || 0,
   };
 
   // Build activity feed from recent batch
-  const activityBatch = recentBatch.map(r => {
+  const activityBatch = recentBatch.map((r) => {
     const id = ++globalActivityId;
-    const statusLabel = r.statusCode > 0 ? `${r.statusCode}` : r.errorType ?? "ERR";
+    const statusLabel = r.statusCode > 0 ? `${r.statusCode}` : (r.errorType ?? 'ERR');
     const action = `${r.path} → ${statusLabel} (${r.responseMs}ms)`;
-    const type: "success" | "error" | "info" = !r.success ? "error" : r.responseMs > 2000 ? "info" : "success";
+    const type: 'success' | 'error' | 'info' = !r.success
+      ? 'error'
+      : r.responseMs > 2000
+        ? 'info'
+        : 'success';
     return {
       id,
       name: `User-${r.userId}`,
@@ -205,7 +231,7 @@ function buildMetrics(
     requestsPerSec: elapsedSec > 0 ? +(total / elapsedSec).toFixed(1) : 0,
     elapsedMs,
     activeUsers,
-    status: "running",
+    status: 'running',
     pageMetrics,
     errorBreakdown,
     pageVisits,
@@ -224,7 +250,7 @@ export async function runRealLoadTest(
   _runId: string,
   config: LoadConfig,
   abortController: AbortController,
-  onMetrics: (metrics: LiveMetrics) => void
+  onMetrics: (metrics: LiveMetrics) => void,
 ): Promise<{
   completed: number;
   failed: number;
@@ -248,14 +274,14 @@ export async function runRealLoadTest(
     timeoutMs = 15000,
   } = config;
 
-  const safePaths = paths.length > 0 ? paths : ["/"];
+  const safePaths = paths.length > 0 ? paths : ['/'];
   const signal = abortController.signal;
   const startTime = Date.now();
 
   const allResults: RequestResult[] = [];
   let activeUsers = 0;
   let inFlightCount = 0;
-  let recentBatch: RequestResult[] = [];
+  const recentBatch: RequestResult[] = [];
   let autoStopped = false;
 
   // Ramp-up: each user starts at an evenly spaced interval
@@ -270,9 +296,16 @@ export async function runRealLoadTest(
     userPromises.push(
       (async () => {
         // Wait for ramp-up delay
-        await new Promise<void>(r => {
+        await new Promise<void>((r) => {
           const t = setTimeout(r, delay);
-          signal.addEventListener("abort", () => { clearTimeout(t); r(); }, { once: true });
+          signal.addEventListener(
+            'abort',
+            () => {
+              clearTimeout(t);
+              r();
+            },
+            { once: true },
+          );
         });
         if (signal.aborted) return;
 
@@ -292,7 +325,7 @@ export async function runRealLoadTest(
 
           // Check auto-stop
           if (!autoStopped && allResults.length >= 20) {
-            const failCount = allResults.filter(r => !r.success).length;
+            const failCount = allResults.filter((r) => !r.success).length;
             const errPct = (failCount / allResults.length) * 100;
             if (errPct > autoStopErrorThreshold) {
               autoStopped = true;
@@ -305,17 +338,24 @@ export async function runRealLoadTest(
 
           // Think time between requests
           const thinkTime = respectRateLimits
-            ? 800 + Math.random() * 1200    // 0.8–2s for polite mode
-            : 50 + Math.random() * 200;     // 50–250ms for aggressive mode
+            ? 800 + Math.random() * 1200 // 0.8–2s for polite mode
+            : 50 + Math.random() * 200; // 50–250ms for aggressive mode
 
-          await new Promise<void>(r => {
+          await new Promise<void>((r) => {
             const t = setTimeout(r, thinkTime);
-            signal.addEventListener("abort", () => { clearTimeout(t); r(); }, { once: true });
+            signal.addEventListener(
+              'abort',
+              () => {
+                clearTimeout(t);
+                r();
+              },
+              { once: true },
+            );
           });
         }
 
         activeUsers--;
-      })()
+      })(),
     );
   }
 
@@ -332,12 +372,18 @@ export async function runRealLoadTest(
 
   // Final metrics snapshot
   const finalResults = allResults;
-  const completed = finalResults.filter(r => r.success).length;
-  const failed = finalResults.filter(r => !r.success).length;
+  const completed = finalResults.filter((r) => r.success).length;
+  const failed = finalResults.filter((r) => !r.success).length;
   const total = finalResults.length;
   const errorRate = total === 0 ? 0 : +((failed / total) * 100).toFixed(2);
-  const successTimes = finalResults.filter(r => r.success).map(r => r.responseMs).sort((a, b) => a - b);
-  const avgResponseMs = successTimes.length === 0 ? 0 : Math.round(successTimes.reduce((s, v) => s + v, 0) / successTimes.length);
+  const successTimes = finalResults
+    .filter((r) => r.success)
+    .map((r) => r.responseMs)
+    .sort((a, b) => a - b);
+  const avgResponseMs =
+    successTimes.length === 0
+      ? 0
+      : Math.round(successTimes.reduce((s, v) => s + v, 0) / successTimes.length);
 
   const pageMetrics: Record<string, { count: number; avgMs: number; errors: number }> = {};
   for (const r of finalResults) {
@@ -353,8 +399,8 @@ export async function runRealLoadTest(
   }
 
   const errorBreakdown: Record<string, number> = {};
-  for (const r of finalResults.filter(r => !r.success)) {
-    const key = r.errorType ?? "unknown";
+  for (const r of finalResults.filter((r) => !r.success)) {
+    const key = r.errorType ?? 'unknown';
     errorBreakdown[key] = (errorBreakdown[key] ?? 0) + 1;
   }
 

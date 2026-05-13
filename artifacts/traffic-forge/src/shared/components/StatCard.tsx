@@ -17,7 +17,8 @@ export function StatCard({ label, value, icon, trend, color }: StatCardProps) {
           <p className="text-2xl font-bold text-foreground mt-2">{value}</p>
           {trend !== undefined && (
             <p className={cn('text-xs mt-2', trend > 0 ? 'text-green-600' : 'text-red-600')}>
-              {trend > 0 ? '+' : ''}{trend}%
+              {trend > 0 ? '+' : ''}
+              {trend}%
             </p>
           )}
         </div>

@@ -47,7 +47,7 @@ export function useLiveData(runId: string | null): LiveDataReturn {
 
     const connect = () => {
       try {
-        ws = new WebSocket(`ws://${window.location.host}/ws?runId=${runId}`);
+        ws = new WebSocket(`ws://${window.location.host}/ws/live-metrics?runId=${runId}`);
 
         ws.onopen = () => {
           setIsLive(true);
@@ -57,7 +57,19 @@ export function useLiveData(runId: string | null): LiveDataReturn {
         ws.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
-            if (data.stats) setStats(data.stats);
+            if (data.stats) {
+              // Server sends requestsPerSec/avgResponseTime; map to local interface
+              setStats({
+                activeAgents: data.stats.activeAgents ?? 0,
+                requestsPerSecond: data.stats.requestsPerSec ?? data.stats.requestsPerSecond ?? 0,
+                errorRate: data.stats.errorRate ?? 0,
+                avgResponse: data.stats.avgResponseTime ?? data.stats.avgResponse ?? 0,
+                cpuPercent: data.stats.cpuPercent ?? 0,
+                heapMB: data.stats.heapMB ?? 0,
+                inFlightRequests: data.stats.inFlightRequests ?? 0,
+              });
+            }
+            if (data.activity) setActivities((prev) => [data.activity, ...prev].slice(0, 100));
             if (data.activities) setActivities(data.activities);
             if (data.enriched) setEnriched(data.enriched);
           } catch (err) {

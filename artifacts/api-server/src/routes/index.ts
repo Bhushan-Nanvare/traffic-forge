@@ -1,6 +1,6 @@
-import { Router, type IRouter } from "express";
-import healthRouter from "../features/health/router";
-import trafficforgeRouter from "../features/trafficforge/router";
+import { Router, type IRouter } from 'express';
+import healthRouter from '../features/health/router';
+import trafficforgeRouter from '../features/trafficforge/router';
 
 const router: IRouter = Router();
 

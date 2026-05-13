@@ -44,3 +44,29 @@ Thumbs.db
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md
 
+# Local notes and drafts
+*.draft.ts
+*.draft.tsx
+.scratch/
+.notes/
+
+# Local test fixtures (not part of the published product)
+test-website/
+.sixth/
+
+# Local environment overrides
+.env.local
+.env.*.local
+
+# Storage state from auth seed runs (contains login cookies)
+.storage-state/
+
+# Archives
+*.zip
+*.tar.gz
+*.7z
+
+# pnpm logs
+.pnpm-debug.log
+.pnpm-debug.log.*
+
