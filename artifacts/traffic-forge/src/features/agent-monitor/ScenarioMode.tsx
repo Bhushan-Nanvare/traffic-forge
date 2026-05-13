@@ -85,6 +85,9 @@ interface StepResult {
   healAttempts?: HealAttempt[];
   screenshot?: string | null;
   url?: string;
+  pageLoadMs?: number;
+  consoleErrors?: string[];
+  networkErrors?: { url: string; status: number }[];
 }
 
 interface ScenarioFailureNarrative {
@@ -210,6 +213,45 @@ function ScenarioStepRow({ result }: { result: StepResult }) {
           )}
           {result.url && (
             <div className="text-xs text-muted-foreground font-mono truncate">{result.url}</div>
+          )}
+          {/* Performance metrics */}
+          <div className="flex flex-wrap gap-3">
+            <span className="text-xs text-muted-foreground">
+              ⏱ Step: <span className="text-foreground font-mono">{result.finishedAt - result.startedAt}ms</span>
+            </span>
+            {result.pageLoadMs !== undefined && (
+              <span className="text-xs text-muted-foreground">
+                🌐 Page load: <span className="text-foreground font-mono">{result.pageLoadMs}ms</span>
+              </span>
+            )}
+            {result.networkErrors && result.networkErrors.length > 0 && (
+              <span className="text-xs text-amber-400">
+                ⚠ {result.networkErrors.length} network error{result.networkErrors.length > 1 ? 's' : ''}
+              </span>
+            )}
+            {result.consoleErrors && result.consoleErrors.length > 0 && (
+              <span className="text-xs text-red-400">
+                ✗ {result.consoleErrors.length} console error{result.consoleErrors.length > 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
+          {result.networkErrors && result.networkErrors.length > 0 && (
+            <div className="space-y-1">
+              {result.networkErrors.slice(0, 5).map((ne, i) => (
+                <div key={i} className="text-xs text-amber-400 font-mono bg-black/30 px-2 py-1 rounded truncate">
+                  HTTP {ne.status} — {ne.url}
+                </div>
+              ))}
+            </div>
+          )}
+          {result.consoleErrors && result.consoleErrors.length > 0 && (
+            <div className="space-y-1">
+              {result.consoleErrors.slice(0, 3).map((ce, i) => (
+                <div key={i} className="text-xs text-red-400 font-mono bg-black/30 px-2 py-1 rounded">
+                  {ce}
+                </div>
+              ))}
+            </div>
           )}
           {result.error && (
             <div className="text-xs text-red-400 font-mono bg-black/40 p-2 rounded">

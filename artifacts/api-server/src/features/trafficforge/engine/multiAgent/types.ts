@@ -10,11 +10,11 @@
 
 export type StepAction =
   | { type: 'navigate'; url: string }
-  | { type: 'click'; role: string; name: string }      // semantic — getByRole
-  | { type: 'fill'; role: string; name: string; value: string }
-  | { type: 'expect_text'; text: string }              // assertion
+  | { type: 'click'; role: string; name: string; selector?: string }
+  | { type: 'fill'; role: string; name: string; value: string; selector?: string }
+  | { type: 'expect_text'; text: string }
   | { type: 'expect_url'; pattern: string }
-  | { type: 'wait_for'; role: string; name: string }
+  | { type: 'wait_for'; role: string; name: string; selector?: string }
   | { type: 'wait_ms'; ms: number };
 
 export interface TestPlanStep {
@@ -48,9 +48,15 @@ export interface StepResult {
   startedAt: number;
   finishedAt: number;
   error?: string;
-  healAttempts?: HealAttempt[];   // populated only if Healer was invoked
-  screenshot?: string | null;     // base64 PNG taken after step
-  url?: string;                   // URL after step
+  healAttempts?: HealAttempt[];
+  screenshot?: string | null;
+  url?: string;
+  /** Milliseconds for DOMContentLoaded — set on navigate steps only. */
+  pageLoadMs?: number;
+  /** JS console errors captured during this step. */
+  consoleErrors?: string[];
+  /** Network requests that returned 4xx/5xx during this step. */
+  networkErrors?: { url: string; status: number }[];
 }
 
 export interface HealAttempt {

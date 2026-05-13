@@ -16,18 +16,20 @@ import {
   type ToolSchema,
 } from '../../../../shared/llm/index.js';
 import { logger } from '../../../../shared/lib/logger.js';
+import type { DomElement } from './domSnapshot.js';
+import { formatSnapshotForPrompt } from './domSnapshot.js';
 
 // ─── System prompt (cached on Anthropic) ─────────────────────────────────────
 
-const SYSTEM_PROMPT = `You are a Test Planner. Given a high-level testing goal and a target URL, produce a step-by-step test plan.
+const SYSTEM_PROMPT = `You are a Test Planner. Given a high-level testing goal, a target URL, and a live snapshot of the page's interactive elements, produce a step-by-step test plan.
 
 Rules:
 - Always start with a "navigate" step to the target URL.
-- Use semantic locators (role + accessible name) — never CSS selectors or IDs.
+- When a DOM snapshot is provided, use ONLY the role + name values listed there — do not invent element names.
+- When a DOM snapshot provides a selector (e.g. #search_product), include it in the action as "selector" for fallback.
 - Each step must have exactly one action.
 - Include at least one expect_* step at the end to verify the goal.
 - Be conservative: 5-15 steps. Prefer fewer steps over more.
-- Use plain English in "name" — what a user reads, not internal IDs.
 
 If the goal cannot be tested without missing data (e.g. login but no credentials), still produce the plan and list what's missing under dataRequirements.
 
@@ -69,6 +71,10 @@ const PLANNER_TOOL: ToolSchema = {
                   description: 'ARIA role for click/fill/wait_for (button, link, textbox, etc.)',
                 },
                 name: { type: 'string', description: 'Accessible name for click/fill/wait_for' },
+                selector: {
+                  type: 'string',
+                  description: 'CSS selector fallback (e.g. #search_product) — from the DOM snapshot',
+                },
                 value: { type: 'string', description: 'Text to type for fill' },
                 text: { type: 'string', description: 'Substring to match for expect_text' },
                 pattern: { type: 'string', description: 'URL pattern for expect_url' },
@@ -96,6 +102,7 @@ interface PlannerToolResult {
       url?: string;
       role?: string;
       name?: string;
+      selector?: string;
       value?: string;
       text?: string;
       pattern?: string;
@@ -110,13 +117,18 @@ export async function generateTestPlan(
   goal: string,
   targetUrl: string,
   config: AgentLLMConfig,
+  domSnapshot?: DomElement[],
 ): Promise<TestPlan> {
   const client = resolveClient(config);
   if (!client) {
     throw new Error('Planner requires an available LLM provider');
   }
 
-  const userPrompt = `Goal: ${goal}\nTarget URL: ${targetUrl}\n\nProduce the test plan now.`;
+  const snapshotSection = domSnapshot && domSnapshot.length > 0
+    ? formatSnapshotForPrompt(domSnapshot)
+    : '\n(No DOM snapshot available — use your best guess for element names.)\n';
+
+  const userPrompt = `Goal: ${goal}\nTarget URL: ${targetUrl}\n${snapshotSection}\nProduce the test plan now.`;
 
   const response = await client.generateWithTool<PlannerToolResult>({
     systemPrompt: SYSTEM_PROMPT,
@@ -163,17 +175,21 @@ function buildAction(raw: PlannerToolResult['steps'][number]['action']): StepAct
     case 'navigate':
       return raw.url ? { type: 'navigate', url: raw.url } : null;
     case 'click':
-      return raw.role && raw.name ? { type: 'click', role: raw.role, name: raw.name } : null;
+      return raw.role && raw.name
+        ? { type: 'click', role: raw.role, name: raw.name, selector: raw.selector }
+        : null;
     case 'fill':
       return raw.role && raw.name && raw.value !== undefined
-        ? { type: 'fill', role: raw.role, name: raw.name, value: raw.value }
+        ? { type: 'fill', role: raw.role, name: raw.name, value: raw.value, selector: raw.selector }
         : null;
     case 'expect_text':
       return raw.text ? { type: 'expect_text', text: raw.text } : null;
     case 'expect_url':
       return raw.pattern ? { type: 'expect_url', pattern: raw.pattern } : null;
     case 'wait_for':
-      return raw.role && raw.name ? { type: 'wait_for', role: raw.role, name: raw.name } : null;
+      return raw.role && raw.name
+        ? { type: 'wait_for', role: raw.role, name: raw.name, selector: raw.selector }
+        : null;
     case 'wait_ms':
       return Number.isFinite(raw.ms) && raw.ms !== undefined ? { type: 'wait_ms', ms: raw.ms } : null;
     default:

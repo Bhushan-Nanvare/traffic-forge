@@ -20,6 +20,7 @@ import type {
   HealAttempt,
 } from './types.js';
 import { generateTestPlan } from './plannerAgent.js';
+import { captureDomSnapshot } from './domSnapshot.js';
 import { ExecutorAgent } from './executorAgent.js';
 import { healStep } from './healerAgent.js';
 import { generateScenarioFailureNarrative } from '../narrative.js';
@@ -62,10 +63,18 @@ export class ScenarioOrchestrator extends EventEmitter {
       healedSteps: 0,
     };
 
-    // ── Phase 1: Plan ────────────────────────────────────────────────────────
+    // ── Phase 1: DOM Snapshot + Plan ─────────────────────────────────────────
     this._emit({ type: 'planning' });
+
+    // Capture real DOM elements so Planner generates accurate locators.
+    // Best-effort — if this fails, Planner proceeds without a snapshot.
+    const domSnapshot = await captureDomSnapshot(config.targetUrl).catch((err) => {
+      logger.warn({ err, runId }, 'DOM snapshot skipped');
+      return [];
+    });
+
     try {
-      summary.plan = await generateTestPlan(config.goal, config.targetUrl, config.llm);
+      summary.plan = await generateTestPlan(config.goal, config.targetUrl, config.llm, domSnapshot);
       this._emit({ type: 'plan_ready', plan: summary.plan });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

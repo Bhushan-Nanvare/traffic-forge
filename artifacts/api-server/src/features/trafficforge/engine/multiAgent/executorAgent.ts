@@ -39,9 +39,13 @@ export class ExecutorAgent {
     captureScreenshots: boolean;
   };
 
+  // Per-step collectors — reset at the start of each runStep
+  private _stepConsoleErrors: string[] = [];
+  private _stepNetworkErrors: { url: string; status: number }[] = [];
+
   constructor(options: ExecutorOptions = {}) {
     this.opts = {
-      stepTimeoutMs: options.stepTimeoutMs ?? 8_000,
+      stepTimeoutMs: options.stepTimeoutMs ?? 12_000,
       viewport: options.viewport ?? { width: 1280, height: 720 },
       headless: options.headless ?? true,
       captureScreenshots: options.captureScreenshots ?? true,
@@ -58,10 +62,22 @@ export class ExecutorAgent {
     this.context = await this.browser.newContext({
       viewport: this.opts.viewport,
       ignoreHTTPSErrors: true,
-      // Pre-authenticated state from a seed run, if provided
       ...(this.opts.storageStatePath ? { storageState: this.opts.storageStatePath } : {}),
     });
     this.page = await this.context.newPage();
+
+    // Wire up persistent listeners for metrics collection
+    this.page.on('console', (msg) => {
+      if (msg.type() === 'error') {
+        this._stepConsoleErrors.push(msg.text().slice(0, 200));
+      }
+    });
+    this.page.on('response', (response) => {
+      const status = response.status();
+      if (status >= 400) {
+        this._stepNetworkErrors.push({ url: response.url().slice(0, 200), status });
+      }
+    });
   }
 
   /** Returns the live Page so Healer can inspect DOM. Throws if not started. */
@@ -82,8 +98,12 @@ export class ExecutorAgent {
     const action = actionOverride ?? step.action;
     const startedAt = Date.now();
 
+    // Reset per-step collectors
+    this._stepConsoleErrors = [];
+    this._stepNetworkErrors = [];
+
     try {
-      await this._performAction(action);
+      const pageLoadMs = await this._performAction(action);
       const finishedAt = Date.now();
       const screenshot = await this._maybeScreenshot();
       return {
@@ -93,6 +113,9 @@ export class ExecutorAgent {
         finishedAt,
         screenshot,
         url: this.page.url(),
+        ...(pageLoadMs !== undefined ? { pageLoadMs } : {}),
+        ...(this._stepConsoleErrors.length > 0 ? { consoleErrors: [...this._stepConsoleErrors] } : {}),
+        ...(this._stepNetworkErrors.length > 0 ? { networkErrors: [...this._stepNetworkErrors] } : {}),
       };
     } catch (err) {
       const finishedAt = Date.now();
@@ -106,6 +129,8 @@ export class ExecutorAgent {
         error: message,
         screenshot,
         url: this.page.url(),
+        ...(this._stepConsoleErrors.length > 0 ? { consoleErrors: [...this._stepConsoleErrors] } : {}),
+        ...(this._stepNetworkErrors.length > 0 ? { networkErrors: [...this._stepNetworkErrors] } : {}),
       };
     }
   }
@@ -121,67 +146,83 @@ export class ExecutorAgent {
 
   // ─── Private: action dispatch ───────────────────────────────────────────────
 
-  private async _performAction(action: StepAction): Promise<void> {
+  /** Returns pageLoadMs for navigate steps, undefined for all others. */
+  private async _performAction(action: StepAction): Promise<number | undefined> {
     const page = this.page!;
     const timeout = this.opts.stepTimeoutMs;
 
     switch (action.type) {
-      case 'navigate':
+      case 'navigate': {
+        const t0 = Date.now();
         await page.goto(action.url, { waitUntil: 'domcontentloaded', timeout });
-        return;
+        return Date.now() - t0;
+      }
 
       case 'click': {
-        const loc = this._resolveByRole(action.role, action.name);
+        const loc = await this._resolveLocator(action.role, action.name, action.selector);
         await loc.click({ timeout });
-        return;
+        return undefined;
       }
 
       case 'fill': {
-        const loc = this._resolveByRole(action.role, action.name);
+        const loc = await this._resolveLocator(action.role, action.name, action.selector);
         await loc.fill(action.value, { timeout });
-        return;
+        return undefined;
       }
 
       case 'expect_text': {
-        // Wait up to timeout for the text to appear anywhere on the page
         await page.waitForFunction(
-          // @ts-ignore - document is available in browser context
-          (text: string) => document.body.innerText.includes(text),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (text: string) => (document as any).body.innerText.includes(text),
           action.text,
           { timeout },
         );
-        return;
+        return undefined;
       }
 
       case 'expect_url': {
         const re = this._toRegex(action.pattern);
         await page.waitForURL(re, { timeout });
-        return;
+        return undefined;
       }
 
       case 'wait_for': {
-        const loc = this._resolveByRole(action.role, action.name);
+        const loc = await this._resolveLocator(action.role, action.name, action.selector);
         await loc.waitFor({ state: 'visible', timeout });
-        return;
+        return undefined;
       }
 
       case 'wait_ms':
         await page.waitForTimeout(action.ms);
-        return;
+        return undefined;
     }
   }
 
   /**
-   * Build a Playwright locator from role + accessible name.
-   * Validates role string against ARIA values; falls back to a permissive
-   * locator if the role is unknown.
+   * Try role+name first (accessibility-first). If no match found immediately,
+   * fall back to CSS selector from the DOM snapshot. This prevents 8-second
+   * timeouts when the AI-generated accessible name doesn't match the real DOM.
    */
-  private _resolveByRole(role: string, name: string): Locator {
+  private async _resolveLocator(role: string, name: string, selector?: string): Promise<Locator> {
     const page = this.page!;
-    // Playwright's getByRole expects a known AriaRole — we cast and let
-    // Playwright handle validation. Unknown roles simply yield no matches
-    // at action time, which surfaces as a clear timeout error.
-    return page.getByRole(role as Parameters<Page['getByRole']>[0], { name });
+    const byRole = page.getByRole(role as Parameters<Page['getByRole']>[0], { name });
+
+    // Quick non-waiting check — count() never waits for elements to appear
+    const count = await byRole.count().catch(() => 0);
+    if (count > 0) return byRole;
+
+    // Role+name yielded nothing — try CSS selector fallback
+    if (selector) {
+      const bySel = page.locator(selector);
+      const selCount = await bySel.count().catch(() => 0);
+      if (selCount > 0) {
+        logger.debug({ role, name, selector }, 'Using CSS selector fallback');
+        return bySel;
+      }
+    }
+
+    // Neither found — return role locator so the timeout error is descriptive
+    return byRole;
   }
 
   private _toRegex(pattern: string): RegExp {
