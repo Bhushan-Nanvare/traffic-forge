@@ -58,3 +58,13 @@ async function start() {
 }
 
 start();
+
+// Keep-alive: ping own healthz every 10 minutes so Render free tier never
+// spins down mid-session. Only runs in production where spin-down happens.
+if (process.env.NODE_ENV === 'production') {
+  const PING_INTERVAL_MS = 10 * 60 * 1000;
+  setInterval(() => {
+    const url = `http://localhost:${rawPort}/api/healthz`;
+    fetch(url).catch(() => {}); // fire-and-forget
+  }, PING_INTERVAL_MS);
+}
