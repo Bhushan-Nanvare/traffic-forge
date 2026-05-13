@@ -1,5 +1,3 @@
-# syntax=docker/dockerfile:1.7
-
 # ─── Build stage ──────────────────────────────────────────────────────────────
 FROM node:20-bookworm-slim AS builder
 
