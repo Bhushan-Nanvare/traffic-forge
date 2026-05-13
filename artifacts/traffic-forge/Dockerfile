@@ -25,6 +25,9 @@ FROM nginx:1.27-alpine
 # API URL injected at runtime via environment variable
 ENV API_URL=http://localhost:8080
 
+# Only substitute $API_URL — leave nginx variables ($host, $uri, $remote_addr, etc.) untouched
+ENV NGINX_ENVSUBST_TEMPLATE_VARS=API_URL
+
 # Use nginx template mechanism — envsubst replaces $API_URL at container start
 COPY artifacts/traffic-forge/nginx.conf.template /etc/nginx/templates/default.conf.template
 
