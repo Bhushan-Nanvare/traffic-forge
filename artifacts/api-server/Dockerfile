@@ -42,6 +42,10 @@ RUN npm install \
     @swc/helpers \
     bufferutil \
     utf-8-validate \
+    pg \
+    drizzle-orm \
+    drizzle-zod \
+    @neondatabase/serverless \
     --no-save --ignore-scripts
 
 ENV NODE_ENV=production
