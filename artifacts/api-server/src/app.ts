@@ -28,7 +28,19 @@ app.use(
     },
   }),
 );
-app.use(cors({ exposedHeaders: ['x-correlation-id'] }));
+// Configure CORS to allow the frontend URL
+app.use(cors({
+  origin: 'https://trafficforge-web.onrender.com',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['x-correlation-id'],
+}));
+
+// Add a basic GET route for the root path
+app.get('/', (_req, res) => {
+  res.status(200).send('OK');
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
