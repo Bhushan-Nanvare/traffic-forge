@@ -47,7 +47,27 @@ export function useLiveData(runId: string | null): LiveDataReturn {
 
     const connect = () => {
       try {
-        ws = new WebSocket(`ws://${window.location.host}/ws/live-metrics?runId=${runId}`);
+        // WS URL resolution priority:
+        //   1. VITE_WS_URL                  — explicit ws:// or wss:// override
+        //   2. VITE_BACKEND_URL             — http(s)://host, converted to ws(s)://
+        //   3. same-origin (window.location), protocol auto-matched to page
+        //
+        // On Vercel, set VITE_BACKEND_URL=https://traffic-forge.onrender.com
+        // (Vite only exposes vars prefixed with VITE_ to the browser — NEXT_PUBLIC_*
+        // does nothing in a Vite build.)
+        const env = (import.meta as unknown as {
+          env?: { VITE_WS_URL?: string; VITE_BACKEND_URL?: string };
+        }).env;
+        const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        let base: string;
+        if (env?.VITE_WS_URL) {
+          base = env.VITE_WS_URL.replace(/\/$/, '');
+        } else if (env?.VITE_BACKEND_URL) {
+          base = env.VITE_BACKEND_URL.replace(/\/$/, '').replace(/^http/, 'ws');
+        } else {
+          base = `${proto}//${window.location.host}`;
+        }
+        ws = new WebSocket(`${base}/ws/live-metrics?runId=${runId}`);
 
         ws.onopen = () => {
           setIsLive(true);

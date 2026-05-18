@@ -1,9 +1,15 @@
+/// <reference lib="dom" />
 /**
  * DOM Snapshot — navigates to a URL headlessly and extracts every interactive
  * element with its actual ARIA role + accessible name + CSS selector.
  *
  * Passed to the Planner so it generates locators that match the real page
  * instead of guessing from training data.
+ *
+ * The /// <reference lib="dom" /> above is needed because this file uses
+ * browser globals (document, Element, HTMLElement, CSS) inside page.evaluate()
+ * callbacks. The reference scopes DOM types to this file only, so the rest of
+ * the backend doesn't accidentally pick up browser-only APIs.
  */
 
 import { chromium } from 'playwright';

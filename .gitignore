@@ -71,3 +71,4 @@ test-website/
 .pnpm-debug.log
 .pnpm-debug.log.*
 
+.claude/
