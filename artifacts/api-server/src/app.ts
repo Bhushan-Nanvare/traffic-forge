@@ -30,21 +30,28 @@ app.use(
 );
 app.use(cors({ exposedHeaders: ['x-correlation-id'] }));
 
-// Add a basic GET route for the root path
-app.get('/', (_req, res) => {
-  res.status(200).send('OK');
-});
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use('/api', router);
 
 if (process.env.NODE_ENV === 'production') {
+  // In production, the Express server serves the compiled React frontend.
+  // express.static serves index.html at / automatically (default behaviour),
+  // and the catch-all below handles SPA client-side routes like /dashboard,
+  // /test-config, etc. — sending them all back to index.html so React Router
+  // can resolve them on the client.
   const frontendDist = path.resolve(process.cwd(), '../traffic-forge/dist/public');
   app.use(express.static(frontendDist));
   app.get('/*path', (_req, res) => {
     res.sendFile(path.join(frontendDist, 'index.html'));
+  });
+} else {
+  // In dev the frontend is served by Vite on a separate port; the backend
+  // root just returns a tiny banner so health probes / accidental hits
+  // don't see a confusing 404.
+  app.get('/', (_req, res) => {
+    res.status(200).type('text/plain').send('TrafficForge API. Frontend runs on http://localhost:5000 in dev.');
   });
 }
 

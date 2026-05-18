@@ -72,3 +72,4 @@ test-website/
 .pnpm-debug.log.*
 
 .claude/
+backend.log

@@ -60,9 +60,24 @@ if not exist "node_modules" (
   call pnpm install || (echo [ERROR] pnpm install failed & pause & exit /b 1)
 )
 
-REM --- Push DB schema (best-effort) ---------------------------
+REM --- Load .env into current cmd session ---------------------
+REM drizzle-kit / pnpm subprocesses inherit these env vars.
+REM Skips comment lines and empty lines.
+for /f "usebackq tokens=1,* delims==" %%A in (".env") do (
+  set "_k=%%A"
+  setlocal enabledelayedexpansion
+  if not "!_k!"=="" if not "!_k:~0,1!"=="#" (
+    endlocal
+    set "%%A=%%B"
+  ) else (
+    endlocal
+  )
+)
+
+REM --- Push DB schema (best-effort, fails silently if already up-to-date) ---
 echo [INFO] Pushing database schema...
-call pnpm --filter @workspace/db run push 2>nul
+call pnpm --filter @workspace/db run push
+if errorlevel 1 echo [INFO] DB schema push had non-zero exit (often means already up-to-date)
 
 REM --- Open browser AFTER dev servers boot, in background -----
 start "" cmd /c "timeout /t 8 /nobreak >nul && start \"\" http://localhost:5000"

@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "cross-env NODE_ENV=development LD_LIBRARY_PATH=/nix/store/24w3s75aa2lrvvxsybficn8y3zxd27kp-mesa-libgbm-25.1.0/lib pnpm run build && node --enable-source-maps ./dist/index.mjs",
     "build": "node ./build.mjs",
-    "start": "node --enable-source-maps ./dist/index.mjs",
+    "start": "node --env-file=../../.env --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "typecheck:test": "tsc -p tsconfig.test.json --noEmit",
     "test": "vitest run",
@@ -33,7 +33,7 @@
     "ollama": "^0.6.3",
     "openai": "^6.34.0",
     "pdfkit": "^0.18.0",
-    "pg": "^8.20.0",
+    "pg": "^8.13.0",
     "pino": "^9",
     "pino-http": "^10",
     "playwright": "^1.59.1",
